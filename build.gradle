@@ -46,6 +46,10 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-mail'
 }
 
+springBoot {
+	mainClassName = 'org.ucentralasia.NovelNest' // Replace with your actual main class path
+}
+
 tasks.named('test') {
 	useJUnitPlatform()
 }
