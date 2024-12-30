@@ -2,7 +2,7 @@
 FROM eclipse-temurin:21-jdk-alpine
 
 # Install necessary tools
-RUN apk add --no-cache bash
+RUN apk add --no-cache bash libc6-compat
 
 # Set working directory
 WORKDIR /app
@@ -13,8 +13,9 @@ COPY . ./
 # Ensure Gradle wrapper has execute permissions
 RUN chmod +x ./gradlew
 
-# Build the app with Gradle wrapper and disable the daemon
-RUN ./gradlew build -x test --no-daemon
+# Debug Gradle build
+RUN ./gradlew build -x test --no-daemon --stacktrace --info || \
+    cat build/reports/tests/test/index.html
 
 # Run the app
 CMD ["sh", "-c", "java -jar build/libs/*.jar"]
