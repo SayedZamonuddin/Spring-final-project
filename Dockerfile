@@ -14,10 +14,10 @@ COPY . ./
 RUN chmod +x ./gradlew
 
 # Debug Gradle build
-RUN ./gradlew build -x test --no-daemon --stacktrace --info || \
+RUN ./gradlew build --no-daemon --stacktrace --info || \
     (echo "Gradle build failed. Debugging..." && \
-    echo "Inspecting build directory..." && ls -l build && \
-    echo "Inspecting build/libs directory..." && ls -l build/libs || true)
+    echo "Inspecting current directory..." && ls -l && \
+    echo "Inspecting build directory (if exists)..." && ls -l build || true)
 
 # Ensure the JAR file exists
 RUN if [ ! -f build/libs/*.jar ]; then \
