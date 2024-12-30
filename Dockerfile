@@ -1,45 +1,40 @@
-FROM ubuntu:latest
-LABEL authors="said"
-
-ENTRYPOINT ["top", "-b"]
 # ===========================
 # Stage 1: Build the Application
 # ===========================
 FROM gradle:8.2.1-jdk17 AS build
 
-# Set the working directory inside the container
+# Set the working directory
 WORKDIR /app
 
-# Copy Gradle build files and wrapper scripts first
-COPY build.gradle settings.gradle gradlew ./
+# Copy Gradle wrapper and configuration files first
+COPY gradlew settings.gradle build.gradle ./
 COPY gradle ./gradle
 
-# Make Gradle Wrapper executable (if using wrapper)
+# Make Gradle wrapper executable
 RUN chmod +x gradlew
 
-# Download dependencies without building the entire project to leverage Docker caching
-RUN ./gradlew build -x test --no-daemon || return 0
+# Pre-fetch dependencies to leverage Docker caching
+RUN ./gradlew dependencies --no-daemon || return 0
 
-# Now copy the source code
+# Copy the application source code
 COPY src ./src
 
-# Build the application
+# Build the Spring Boot application JAR file
 RUN ./gradlew bootJar -x test --no-daemon
 
 # ===========================
 # Stage 2: Create the Runtime Image
 # ===========================
-FROM openjdk:17.0.1-jdk-slim
+FROM openjdk:17-jdk-slim
 
-# Set working directory
+# Set the working directory
 WORKDIR /app
 
-# Copy the Spring Boot JAR file from the build stage
-COPY --from=build /app/build/libs/*.jar demo.jar
+# Copy the generated JAR file from the build stage
+COPY --from=build /app/build/libs/*.jar app.jar
 
-# Expose the application port
-# Adjust if your application runs on a different port (e.g., if server.port=8000, then EXPOSE 8000)
+# Expose the application port (adjust if your Spring Boot app uses a different port)
 EXPOSE 8080
 
-# Set the entrypoint to run the JAR
-ENTRYPOINT ["java", "-jar", "demo.jar"]
+# Set the default command to run the Spring Boot application
+ENTRYPOINT ["java", "-jar", "app.jar"]
