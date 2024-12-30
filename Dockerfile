@@ -17,8 +17,13 @@ RUN chmod +x ./gradlew
 RUN ./gradlew build -x test --no-daemon --stacktrace --info || \
     (echo "Gradle build failed. Debugging..." && \
     echo "Inspecting build directory..." && ls -l build && \
-    echo "Inspecting build/libs directory..." && ls -l build/libs && \
-    echo "Inspecting test reports directory..." && ls -l build/reports/tests/test || true)
+    echo "Inspecting build/libs directory..." && ls -l build/libs || true)
+
+# Ensure the JAR file exists
+RUN if [ ! -f build/libs/*.jar ]; then \
+    echo "JAR file not found in build/libs. Build might have failed."; \
+    exit 1; \
+fi
 
 # Run the app
 CMD ["sh", "-c", "java -jar build/libs/*.jar"]
