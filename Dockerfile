@@ -1,45 +1,41 @@
-# Stage 1: Build
-FROM eclipse-temurin:17-jdk-alpine AS builder
+# ===========================
+# Stage 1: Build the Application
+# ===========================
+FROM gradle:8.2.1-jdk17 AS build
 
-# Install necessary tools
-RUN apk add --no-cache bash libc6-compat
+# Set the working directory inside the container
+WORKDIR /app
+
+# Copy Gradle build files and wrapper scripts first
+COPY build.gradle settings.gradle gradlew ./
+COPY gradle ./gradle
+
+# Make Gradle Wrapper executable (if using wrapper)
+RUN chmod +x gradlew
+
+# Download dependencies without building the entire project to leverage Docker caching
+RUN ./gradlew build -x test --no-daemon || return 0
+
+# Now copy the source code
+COPY src ./src
+
+# Build the application
+RUN ./gradlew bootJar -x test --no-daemon
+
+# ===========================
+# Stage 2: Create the Runtime Image
+# ===========================
+FROM openjdk:17.0.1-jdk-slim
 
 # Set working directory
 WORKDIR /app
 
-# Copy the Gradle wrapper and build files
-COPY gradlew .
-COPY gradle gradle
-COPY build.gradle .
-COPY settings.gradle .
+# Copy the Spring Boot JAR file from the build stage
+COPY --from=build /app/build/libs/*.jar demo.jar
 
-# Copy the project files (source code)
-COPY src src
+# Expose the application port
+# Adjust if your application runs on a different port (e.g., if server.port=8000, then EXPOSE 8000)
+EXPOSE 8080
 
-# Ensure Gradle wrapper has execute permissions
-RUN chmod +x ./gradlew
-
-# Build the application (clean build, verbose, stacktrace for debugging)
-RUN ./gradlew clean build --no-daemon --stacktrace --info || \
-    (echo "Gradle build failed. Debugging..." && \
-    echo "Current directory contents:" && ls -l && \
-    echo "Build directory contents (if exists):" && ls -l build && \
-    echo "Gradle build logs:" && cat build/reports/build/classes/java/main/*.log || true)
-
-# Verify JAR file creation
-RUN if [ ! -f build/libs/*.jar ]; then \
-    echo "JAR file not found in build/libs. Build might have failed."; \
-    exit 1; \
-fi
-
-# Stage 2: Run
-FROM eclipse-temurin:17-jdk-alpine
-
-# Set working directory
-WORKDIR /app
-
-# Copy the JAR file from the builder stage
-COPY --from=builder /app/build/libs/*.jar app.jar
-
-# Command to run the application
-CMD ["java", "-jar", "app.jar"]
+# Set the entrypoint to run the JAR
+ENTRYPOINT ["java", "-jar", "demo.jar"]
