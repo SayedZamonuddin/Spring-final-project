@@ -2,7 +2,7 @@
 FROM eclipse-temurin:21-jdk-alpine
 
 # Install Gradle
-RUN apk add --no-cache gradle
+RUN apk add --no-cache gradle bash
 
 # Set working directory
 WORKDIR /app
@@ -10,8 +10,11 @@ WORKDIR /app
 # Copy local code to the container image
 COPY . ./
 
-# Build the app with Gradle (you can add any specific tasks or properties as needed)
-RUN gradle build -x test
+# Ensure Gradle wrapper has execute permissions (if using wrapper)
+RUN chmod +x ./gradlew
+
+# Build the app with Gradle wrapper (if available) or Gradle
+RUN ./gradlew build -x test || gradle build -x test
 
 # Run the app
 CMD ["sh", "-c", "java -jar build/libs/*.jar"]
