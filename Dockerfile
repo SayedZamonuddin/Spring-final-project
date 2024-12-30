@@ -13,13 +13,18 @@ COPY . ./
 # Ensure Gradle wrapper has execute permissions
 RUN chmod +x ./gradlew
 
-# Build the application and verify the JAR file
-RUN ./gradlew build --no-daemon --stacktrace --info && \
-    echo "Checking for generated JAR in build/libs..." && ls -l build/libs && \
-    if [ ! -f build/libs/*.jar ]; then \
-        echo "JAR file not found in build/libs. Build might have failed."; \
-        exit 1; \
-    fi
+# Debug Gradle build step
+RUN ./gradlew clean build --no-daemon --stacktrace --info || \
+    (echo "Gradle build failed. Debugging..." && \
+    echo "Current directory contents:" && ls -l && \
+    echo "Build directory contents (if exists):" && ls -l build || true && \
+    exit 1)
+
+# Verify JAR file creation
+RUN if [ ! -f build/libs/*.jar ]; then \
+    echo "JAR file not found in build/libs. Build might have failed."; \
+    exit 1; \
+fi
 
 # Stage 2: Run
 FROM eclipse-temurin:21-jdk-alpine
