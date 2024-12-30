@@ -1,40 +1,36 @@
-# ===========================
-# Stage 1: Build the Application
-# ===========================
+# Step 1: Use Gradle image to build the app
 FROM gradle:8.2.1-jdk17 AS build
 
 # Set the working directory inside the container
 WORKDIR /app
 
-# Copy Gradle build files and wrapper scripts first
+# Copy Gradle files and wrapper
 COPY build.gradle settings.gradle gradlew ./
 COPY gradle ./gradle
 
-# Make Gradle Wrapper executable
+# Make the gradlew script executable
 RUN chmod +x gradlew
 
-# Download dependencies (this avoids re-downloading dependencies if nothing changes)
-RUN ./gradlew build --no-daemon
+# Download dependencies to cache them
+RUN ./gradlew build --no-daemon || exit 0
 
-# Now copy the source code
+# Copy source code
 COPY src ./src
 
-# Build the application and create the executable JAR
-RUN ./gradlew bootJar -x test --no-daemon --stacktrace
+# Build the project (will generate the JAR file)
+RUN ./gradlew bootJar -x test --no-daemon
 
-# ===========================
-# Stage 2: Create the Runtime Image
-# ===========================
-FROM openjdk:17.0.1-jdk-slim
+# Step 2: Create the runtime image
+FROM openjdk:17-jdk-slim
 
-# Set working directory
+# Set the working directory
 WORKDIR /app
 
 # Copy the Spring Boot JAR file from the build stage
 COPY --from=build /app/build/libs/*.jar demo.jar
 
-# Expose the application port (adjust if your application runs on a different port)
+# Expose port for the application
 EXPOSE 8080
 
-# Set the entrypoint to run the JAR
+# Run the application
 ENTRYPOINT ["java", "-jar", "demo.jar"]
