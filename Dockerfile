@@ -17,7 +17,8 @@ RUN chmod +x ./gradlew
 RUN ./gradlew clean build --no-daemon --stacktrace --info || \
     (echo "Gradle build failed. Debugging..." && \
     echo "Current directory contents:" && ls -l && \
-    echo "Build directory contents (if exists):" && ls -l build || true && \
+    echo "Build directory contents (if exists):" && ls -l build && \
+    echo "Gradle build logs:" && cat build/reports/build/classes/java/main/*.log || true && \
     exit 1)
 
 # Verify JAR file creation
