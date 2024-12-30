@@ -20,7 +20,11 @@ COPY src src
 RUN chmod +x ./gradlew
 
 # Build the application (clean build, verbose, stacktrace for debugging)
-RUN ./gradlew clean build --no-daemon --stacktrace --info
+RUN ./gradlew clean build --no-daemon --stacktrace --info || \
+    (echo "Gradle build failed. Debugging..." && \
+    echo "Current directory contents:" && ls -l && \
+    echo "Build directory contents (if exists):" && ls -l build && \
+    echo "Gradle build logs:" && cat build/reports/build/classes/java/main/*.log || true)
 
 # Verify JAR file creation
 RUN if [ ! -f build/libs/*.jar ]; then \
