@@ -10,7 +10,8 @@ COPY build.gradle settings.gradle gradlew ./
 # Copy the gradle wrapper and make it executable
 COPY gradle/ gradle/
 
-RUN chmod +x gradlew
+# Verify that gradlew exists and is executable
+RUN ls -l gradlew && echo "gradlew is available" && chmod +x gradlew
 
 # Copy the source code into the container
 COPY src ./src
