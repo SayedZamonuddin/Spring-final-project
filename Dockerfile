@@ -18,3 +18,4 @@ RUN ./gradlew build -x test || gradle build -x test
 
 # Run the app
 CMD ["sh", "-c", "java -jar build/libs/*.jar"]
+
