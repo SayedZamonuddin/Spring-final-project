@@ -10,17 +10,16 @@ WORKDIR /app
 COPY build.gradle settings.gradle gradlew ./
 COPY gradle ./gradle
 
-# Make Gradle Wrapper executable (if using wrapper)
+# Make Gradle Wrapper executable
 RUN chmod +x gradlew
 
 # Download dependencies (this avoids re-downloading dependencies if nothing changes)
-RUN ./gradlew dependencies --no-daemon || exit 0
+RUN ./gradlew build --no-daemon
 
 # Now copy the source code
 COPY src ./src
 
 # Build the application and create the executable JAR
-# Adding --stacktrace for detailed error logs
 RUN ./gradlew bootJar -x test --no-daemon --stacktrace
 
 # ===========================
