@@ -1,5 +1,5 @@
 # Stage 1: Build
-FROM eclipse-temurin:21-jdk-alpine AS builder
+FROM eclipse-temurin:17-jdk-alpine AS builder
 
 # Install necessary tools
 RUN apk add --no-cache bash libc6-compat
@@ -7,19 +7,20 @@ RUN apk add --no-cache bash libc6-compat
 # Set working directory
 WORKDIR /app
 
-# Copy project files to the container
-COPY . ./
+# Copy the Gradle wrapper and build files
+COPY gradlew .
+COPY gradle gradle
+COPY build.gradle .
+COPY settings.gradle .
+
+# Copy the project files (source code)
+COPY src src
 
 # Ensure Gradle wrapper has execute permissions
 RUN chmod +x ./gradlew
 
-# Debug Gradle build step
-RUN ./gradlew clean build --no-daemon --stacktrace --info || \
-    (echo "Gradle build failed. Debugging..." && \
-    echo "Current directory contents:" && ls -l && \
-    echo "Build directory contents (if exists):" && ls -l build && \
-    echo "Gradle build logs:" && cat build/reports/build/classes/java/main/*.log || true && \
-    exit 1)
+# Build the application (clean build, verbose, stacktrace for debugging)
+RUN ./gradlew clean build --no-daemon --stacktrace --info
 
 # Verify JAR file creation
 RUN if [ ! -f build/libs/*.jar ]; then \
@@ -28,7 +29,7 @@ RUN if [ ! -f build/libs/*.jar ]; then \
 fi
 
 # Stage 2: Run
-FROM eclipse-temurin:21-jdk-alpine
+FROM eclipse-temurin:17-jdk-alpine
 
 # Set working directory
 WORKDIR /app
