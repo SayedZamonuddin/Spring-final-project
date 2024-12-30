@@ -1,35 +1,32 @@
-# Use an official OpenJDK runtime as a parent image
-FROM openjdk:17-jdk-slim AS build
+# Use a base image with OpenJDK
+FROM openjdk:17-jdk-alpine
 
-# Set the working directory in the container
+# Set the working directory inside the container
 WORKDIR /app
 
-# Copy the build.gradle, settings.gradle, and gradlew files into the container
-COPY build.gradle settings.gradle gradlew ./
+# Copy the Gradle wrapper and wrapper properties
+COPY gradlew gradlew.bat gradle/ ./
 
-# Copy the gradle wrapper and make it executable
-COPY gradle/ gradle/
+# Make the gradlew script executable
+RUN chmod +x gradlew
 
-# Verify that gradlew exists and is executable
-RUN ls -l gradlew && echo "gradlew is available" && chmod +x gradlew
+# Copy the entire project into the container
+COPY . .
 
-# Copy the source code into the container
-COPY src ./src
-
-# Build the application using Gradle
+# Run Gradle build (use the wrapper to ensure correct version of Gradle)
 RUN ./gradlew build --no-daemon
 
-# Use a smaller image to run the application
-FROM openjdk:17-jdk-slim
+# Use a smaller base image to run the application
+FROM openjdk:17-jdk-alpine
 
-# Set the working directory in the container
+# Set the working directory inside the container
 WORKDIR /app
 
-# Copy the built jar file from the build image
-COPY --from=build /app/build/libs/*.jar app.jar
+# Copy the built jar file from the previous build stage
+COPY --from=0 /app/build/libs/your-app-name.jar app.jar
 
-# Expose the port your application will run on
+# Expose the application port
 EXPOSE 8080
 
-# Run the Spring Boot application
+# Run the application
 ENTRYPOINT ["java", "-jar", "app.jar"]
