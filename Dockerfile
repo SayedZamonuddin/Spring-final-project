@@ -13,13 +13,13 @@ COPY gradle ./gradle
 # Make Gradle Wrapper executable (if using wrapper)
 RUN chmod +x gradlew
 
-# Download dependencies without building the entire project to leverage Docker caching
-RUN ./gradlew build -x test --no-daemon || return 0
+# Download dependencies (this avoids re-downloading dependencies if nothing changes)
+RUN ./gradlew dependencies --no-daemon || exit 0
 
 # Now copy the source code
 COPY src ./src
 
-# Build the application
+# Build the application and create the executable JAR
 RUN ./gradlew bootJar -x test --no-daemon
 
 # ===========================
@@ -33,8 +33,7 @@ WORKDIR /app
 # Copy the Spring Boot JAR file from the build stage
 COPY --from=build /app/build/libs/*.jar demo.jar
 
-# Expose the application port
-# Adjust if your application runs on a different port (e.g., if server.port=8000, then EXPOSE 8000)
+# Expose the application port (adjust if your application runs on a different port)
 EXPOSE 8080
 
 # Set the entrypoint to run the JAR
