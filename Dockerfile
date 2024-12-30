@@ -4,8 +4,13 @@ FROM openjdk:17-jdk-slim AS build
 # Set the working directory in the container
 WORKDIR /app
 
-# Copy the build.gradle and settings files into the container
-COPY build.gradle settings.gradle ./
+# Copy the build.gradle, settings.gradle, and gradlew files into the container
+COPY build.gradle settings.gradle gradlew ./
+
+# Copy the gradle wrapper and make it executable
+COPY gradle/ gradle/
+
+RUN chmod +x gradlew
 
 # Copy the source code into the container
 COPY src ./src
