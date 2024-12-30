@@ -20,7 +20,8 @@ RUN ./gradlew dependencies --no-daemon || exit 0
 COPY src ./src
 
 # Build the application and create the executable JAR
-RUN ./gradlew bootJar -x test --no-daemon
+# Adding --stacktrace for detailed error logs
+RUN ./gradlew bootJar -x test --no-daemon --stacktrace
 
 # ===========================
 # Stage 2: Create the Runtime Image
