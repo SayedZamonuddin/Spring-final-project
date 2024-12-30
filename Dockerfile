@@ -1,36 +1,17 @@
-# Use an official OpenJDK runtime as a parent image
-FROM eclipse-temurin:17-jdk-alpine
+# Use the Eclipse Temurin Alpine official image
+FROM eclipse-temurin:21-jdk-alpine
 
-# Set the working directory inside the container
+# Install Gradle
+RUN apk add --no-cache gradle
+
+# Set working directory
 WORKDIR /app
 
-# Copy the Gradle wrapper and build files
-COPY gradlew gradlew.bat settings.gradle build.gradle ./
-COPY gradle gradle
+# Copy local code to the container image
+COPY . ./
 
-# Copy the application source code
-COPY src src
+# Build the app with Gradle (you can add any specific tasks or properties as needed)
+RUN gradle build -x test
 
-# Add necessary permissions to the Gradle wrapper
-RUN chmod +x ./gradlew
-
-# Build the application
-RUN ./gradlew build -x test
-
-# Copy the built jar to a new stage
-FROM eclipse-temurin:17-jre-alpine
-
-# Set environment variables for the container
-ENV SPRING_PROFILES_ACTIVE=prod
-
-# Set the working directory inside the container
-WORKDIR /app
-
-# Copy the built jar from the previous stage
-COPY --from=0 /app/build/libs/*.jar app.jar
-
-# Expose the port the app runs on
-EXPOSE 8080
-
-# Run the application
-ENTRYPOINT ["java", "-jar", "app.jar"]
+# Run the app
+CMD ["sh", "-c", "java -jar build/libs/*.jar"]
