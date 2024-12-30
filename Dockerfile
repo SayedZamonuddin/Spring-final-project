@@ -15,7 +15,10 @@ RUN chmod +x ./gradlew
 
 # Debug Gradle build
 RUN ./gradlew build -x test --no-daemon --stacktrace --info || \
-    cat build/reports/tests/test/index.html
+    (echo "Gradle build failed. Debugging..." && \
+    echo "Inspecting build directory..." && ls -l build && \
+    echo "Inspecting build/libs directory..." && ls -l build/libs && \
+    echo "Inspecting test reports directory..." && ls -l build/reports/tests/test || true)
 
 # Run the app
 CMD ["sh", "-c", "java -jar build/libs/*.jar"]
