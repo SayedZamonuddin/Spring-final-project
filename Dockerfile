@@ -1,41 +1,36 @@
-# ===========================
-# Stage 1: Build the Application
-# ===========================
-FROM gradle:8.2.1-jdk17 AS build
+# Use an official OpenJDK runtime as a parent image
+FROM eclipse-temurin:17-jdk-alpine
 
 # Set the working directory inside the container
 WORKDIR /app
 
-# Copy Gradle build files and wrapper scripts first
-COPY build.gradle settings.gradle gradlew ./
-COPY gradle ./gradle
+# Copy the Gradle wrapper and build files
+COPY gradlew gradlew.bat settings.gradle build.gradle ./
+COPY gradle gradle
 
-# Make Gradle Wrapper executable (if using wrapper)
-RUN chmod +x gradlew
+# Copy the application source code
+COPY src src
 
-# Download dependencies without building the entire project to leverage Docker caching
-RUN ./gradlew build -x test --no-daemon || return 0
-
-# Now copy the source code
-COPY src ./src
+# Add necessary permissions to the Gradle wrapper
+RUN chmod +x ./gradlew
 
 # Build the application
-RUN ./gradlew bootJar -x test --no-daemon
+RUN ./gradlew build -x test
 
-# ===========================
-# Stage 2: Create the Runtime Image
-# ===========================
-FROM openjdk:17.0.1-jdk-slim
+# Copy the built jar to a new stage
+FROM eclipse-temurin:17-jre-alpine
 
-# Set working directory
+# Set environment variables for the container
+ENV SPRING_PROFILES_ACTIVE=prod
+
+# Set the working directory inside the container
 WORKDIR /app
 
-# Copy the Spring Boot JAR file from the build stage
-COPY --from=build /app/build/libs/*.jar demo.jar
+# Copy the built jar from the previous stage
+COPY --from=0 /app/build/libs/*.jar app.jar
 
-# Expose the application port
-# Adjust if your application runs on a different port (e.g., if server.port=8000, then EXPOSE 8000)
+# Expose the port the app runs on
 EXPOSE 8080
 
-# Set the entrypoint to run the JAR
-ENTRYPOINT ["java", "-jar", "demo.jar"]
+# Run the application
+ENTRYPOINT ["java", "-jar", "app.jar"]
